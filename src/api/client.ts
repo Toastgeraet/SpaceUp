@@ -45,59 +45,68 @@ export const AgentResponseSchema = z.object({
   })
 })
 
-export const ShipResponseSchema = z.object({
-  data: z.object({
-    symbol: z.string(),
-    registration: z.object({
-      name: z.string(),
-      factionSymbol: z.string(),
-      role: z.string()
+// Schema for individual ship data
+const ShipDataSchema = z.object({
+  symbol: z.string(),
+  registration: z.object({
+    name: z.string(),
+    factionSymbol: z.string(),
+    role: z.string()
+  }),
+  nav: z.object({
+    systemSymbol: z.string(),
+    waypointSymbol: z.string(),
+    route: z.object({
+      origin: z.string(),
+      destination: z.string(),
+      arrival: z.string(),
+      departureTime: z.string()
     }),
-    nav: z.object({
-      systemSymbol: z.string(),
-      waypointSymbol: z.string(),
-      route: z.object({
-        origin: z.string(),
-        destination: z.string(),
-        arrival: z.string(),
-        departureTime: z.string()
-      }),
-      status: z.string(),
-      flightMode: z.string()
-    }),
-    crew: z.object({
-      current: z.number(),
-      required: z.number(),
-      capacity: z.number(),
-      rotation: z.string(),
-      morale: z.number(),
-      wages: z.number()
-    }),
-    frame: z.any(),
-    reactor: z.any(),
-    engine: z.any(),
-    cooldown: z.object({
-      shipSymbol: z.string(),
-      totalSeconds: z.number(),
-      remainingSeconds: z.number(),
-      expiration: z.string().optional()
-    }),
-    modules: z.array(z.any()),
-    mounts: z.array(z.any()),
-    cargo: z.object({
-      capacity: z.number(),
-      units: z.number(),
-      inventory: z.array(z.any())
-    }),
-    fuel: z.object({
-      current: z.number(),
-      capacity: z.number(),
-      consumed: z.object({
-        amount: z.number(),
-        timestamp: z.string()
-      }).optional()
-    })
+    status: z.string(),
+    flightMode: z.string()
+  }),
+  crew: z.object({
+    current: z.number(),
+    required: z.number(),
+    capacity: z.number(),
+    rotation: z.string(),
+    morale: z.number(),
+    wages: z.number()
+  }),
+  frame: z.any(),
+  reactor: z.any(),
+  engine: z.any(),
+  cooldown: z.object({
+    shipSymbol: z.string(),
+    totalSeconds: z.number(),
+    remainingSeconds: z.number(),
+    expiration: z.string().optional()
+  }),
+  modules: z.array(z.any()),
+  mounts: z.array(z.any()),
+  cargo: z.object({
+    capacity: z.number(),
+    units: z.number(),
+    inventory: z.array(z.any())
+  }),
+  fuel: z.object({
+    current: z.number(),
+    capacity: z.number(),
+    consumed: z.object({
+      amount: z.number(),
+      timestamp: z.string()
+    }).optional()
   })
+})
+
+// Schema for single ship response
+export const ShipResponseSchema = z.object({
+  data: ShipDataSchema
+})
+
+// Schema for multiple ships response
+export const ShipsResponseSchema = z.object({
+  data: z.array(ShipDataSchema)
 })
 
 export class SpaceTradersApiClient {
@@ -370,23 +379,49 @@ export class SpaceTradersApiClient {
 
       // Update ship data
       if (url.includes('/my/ships')) {
-        const shipData = ShipResponseSchema.parse(response.data)
-        await db.ships.put({
-          symbol: shipData.data.symbol,
-          registration: shipData.data.registration,
-          nav: shipData.data.nav,
-          crew: shipData.data.crew,
-          frame: shipData.data.frame,
-          reactor: shipData.data.reactor,
-          engine: shipData.data.engine,
-          cooldown: shipData.data.cooldown,
-          modules: shipData.data.modules,
-          mounts: shipData.data.mounts,
-          cargo: shipData.data.cargo,
-          fuel: shipData.data.fuel,
-          agentSymbol: this.currentAgentSymbol || '',
-          updatedAt: new Date()
-        })
+        // Check if this is a single ship or multiple ships response
+        if (url.match(/\/my\/ships\/[^\/]+$/)) {
+          // Single ship response (e.g., /my/ships/SHIP-123)
+          const shipData = ShipResponseSchema.parse(response.data)
+          await db.ships.put({
+            symbol: shipData.data.symbol,
+            registration: shipData.data.registration,
+            nav: shipData.data.nav,
+            crew: shipData.data.crew,
+            frame: shipData.data.frame,
+            reactor: shipData.data.reactor,
+            engine: shipData.data.engine,
+            cooldown: shipData.data.cooldown,
+            modules: shipData.data.modules,
+            mounts: shipData.data.mounts,
+            cargo: shipData.data.cargo,
+            fuel: shipData.data.fuel,
+            agentSymbol: this.currentAgentSymbol || '',
+            updatedAt: new Date()
+          })
+        } else if (url === '/my/ships') {
+          // Multiple ships response
+          const shipsData = ShipsResponseSchema.parse(response.data)
+          // Store each ship individually
+          for (const ship of shipsData.data) {
+            await db.ships.put({
+              symbol: ship.symbol,
+              registration: ship.registration,
+              nav: ship.nav,
+              crew: ship.crew,
+              frame: ship.frame,
+              reactor: ship.reactor,
+              engine: ship.engine,
+              cooldown: ship.cooldown,
+              modules: ship.modules,
+              mounts: ship.mounts,
+              cargo: ship.cargo,
+              fuel: ship.fuel,
+              agentSymbol: this.currentAgentSymbol || '',
+              updatedAt: new Date()
+            })
+          }
+        }
       }
     } catch (error) {
       console.warn('Failed to update local data:', error)
