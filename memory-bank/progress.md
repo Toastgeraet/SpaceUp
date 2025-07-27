@@ -53,11 +53,12 @@
   - [ ] Step 6: Tutorial completion with offline progress tracking
 
 - [ ] **Offline-Capable Manual Game Controls**
-  - [ ] Ship movement with local position updates
-  - [ ] Market trading with cached market data
-  - [ ] Mining and extraction with local resource tracking
-  - [ ] Contract management with offline contract storage
-  - [ ] System exploration with cached system data
+  - **Note**: Real offline play is not possible. These controls queue commands and workflows to the sync layer which will be executed once API is available again.
+  - [ ] Ship movement commands queued for execution when online
+  - [ ] Market trading orders queued with cached market data for reference
+  - [ ] Mining and extraction commands queued with local resource state tracking
+  - [ ] Contract management actions queued with offline contract storage
+  - [ ] System exploration commands queued with cached system data for navigation
 
 #### Phase 3: Offline-First Automation System (Future Priority)
 - [ ] **Vue Flow Workflow Editor**
