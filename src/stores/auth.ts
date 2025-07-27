@@ -46,6 +46,20 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
       
+      // Check for development auto-login token if no stored auth exists
+      const devToken = import.meta.env.VITE_DEV_TOKEN
+      if (devToken) {
+        console.log('Development token found, attempting automatic login...')
+        try {
+          await setToken(devToken)
+          console.log('Development auto-login successful')
+          return true
+        } catch (err) {
+          console.warn('Development auto-login failed:', err)
+          // Continue with normal flow - don't throw error for dev convenience
+        }
+      }
+      
       return false
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to load stored authentication'
