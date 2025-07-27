@@ -14,7 +14,14 @@ export const useAuthStore = defineStore('auth', () => {
   // Computed
   const isAuthenticated = computed(() => !!token.value)
   const networkStatus = computed(() => apiClient.networkStatus)
-  const rateLimiterStatus = computed(() => apiClient.rateLimiterStatus)
+  
+  // Make rate limiter status reactive by creating a getter that Vue can track
+  const rateLimiterStatus = computed(() => {
+    // Force reactivity by accessing a reactive value that changes frequently
+    // This ensures the computed property is re-evaluated regularly
+    const tick = Date.now()
+    return apiClient.rateLimiterStatus
+  })
 
   // Actions
   async function loadStoredAuth(): Promise<boolean> {
