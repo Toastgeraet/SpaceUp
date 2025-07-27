@@ -269,15 +269,8 @@ export class SpaceTradersApiClient {
     const tracker = this.rateLimitTrackers.get(token)
     if (!tracker) return true
 
-    const now = Date.now()
-    
-    // Clean old requests from tracking arrays
-    tracker.burstRequests = tracker.burstRequests.filter(
-      (time: number) => now - time < RATE_LIMIT_CONFIG.burstWindow
-    )
-    tracker.rateRequests = tracker.rateRequests.filter(
-      (time: number) => now - time < RATE_LIMIT_CONFIG.rateWindow
-    )
+    // Clean expired timestamps from the tracker arrays
+    this.cleanExpiredTimestamps(tracker)
 
     // Check burst limit (30 requests in 60 seconds)
     if (tracker.burstRequests.length >= RATE_LIMIT_CONFIG.burstLimit) {
@@ -546,6 +539,21 @@ export class SpaceTradersApiClient {
   }
 
   /**
+   * Clean expired timestamps from rate limit tracker
+   */
+  private cleanExpiredTimestamps(tracker: RateLimitTracker): void {
+    const now = Date.now()
+    
+    // Clean old requests from tracking arrays and update the stored arrays
+    tracker.burstRequests = tracker.burstRequests.filter(
+      (time: number) => now - time < RATE_LIMIT_CONFIG.burstWindow
+    )
+    tracker.rateRequests = tracker.rateRequests.filter(
+      (time: number) => now - time < RATE_LIMIT_CONFIG.rateWindow
+    )
+  }
+
+  /**
    * Get rate limiter status
    */
   get rateLimiterStatus() {
@@ -576,16 +584,11 @@ export class SpaceTradersApiClient {
       }
     }
 
-    const now = Date.now()
-    
-    // Clean old requests from tracking arrays for current status
-    const burstRequests = tracker.burstRequests.filter(
-      (time: number) => now - time < RATE_LIMIT_CONFIG.burstWindow
-    ).length
-    
-    const rateRequests = tracker.rateRequests.filter(
-      (time: number) => now - time < RATE_LIMIT_CONFIG.rateWindow
-    ).length
+    // Clean expired timestamps from the tracker arrays
+    this.cleanExpiredTimestamps(tracker)
+
+    const burstRequests = tracker.burstRequests.length
+    const rateRequests = tracker.rateRequests.length
 
     const canMakeRequest = burstRequests < RATE_LIMIT_CONFIG.burstLimit && 
                           rateRequests < RATE_LIMIT_CONFIG.rateLimit
