@@ -213,25 +213,31 @@ export class SpaceTradersApiClient {
 
         return response
       },
-      async (error) => {
-        // Handle offline or network errors by queuing
-        if (!navigator.onLine || error.code === 'NETWORK_ERROR') {
-          console.log('Network error, queuing request for background sync')
-          // Queue for background sync if applicable
-          await this.queueForBackgroundSync(error.config)
-        }
+  async (error) => {
+    // Check if error.config exists to avoid accessing undefined properties
+    if (!error.config) {
+      console.warn('Error occurred without request config:', error)
+      return Promise.reject(error)
+    }
 
-        // Try to return cached data for GET requests
-        if (error.config.method === 'get') {
-          const cachedResponse = await this.getCachedResponse(error.config)
-          if (cachedResponse) {
-            console.log('Returning cached response for:', error.config.url)
-            return cachedResponse
-          }
-        }
+    // Handle offline or network errors by queuing
+    if (!navigator.onLine || error.code === 'NETWORK_ERROR') {
+      console.log('Network error, queuing request for background sync')
+      // Queue for background sync if applicable
+      await this.queueForBackgroundSync(error.config)
+    }
 
-        return Promise.reject(error)
+    // Try to return cached data for GET requests
+    if (error.config.method === 'get') {
+      const cachedResponse = await this.getCachedResponse(error.config)
+      if (cachedResponse) {
+        console.log('Returning cached response for:', error.config.url)
+        return cachedResponse
       }
+    }
+
+    return Promise.reject(error)
+  }
     )
   }
 
