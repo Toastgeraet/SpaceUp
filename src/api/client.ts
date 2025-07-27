@@ -4,24 +4,28 @@ import { actionQueue } from '@/services/actionQueue'
 import { z } from 'zod'
 
 // Rate limiting configuration for SpaceTraders API
+// Based on actual API headers and documentation:
+// - Burst limit: 30 requests
+// - Burst duration: 60 seconds  
+// - Rate limit: 2 requests per second
 interface RateLimitConfig {
-  burstLimit: number // 2 requests per second
-  sustainedLimit: number // 10 requests per 10 seconds
-  burstWindow: number // 1000ms
-  sustainedWindow: number // 10000ms
+  burstLimit: number // 30 requests total in burst
+  rateLimit: number // 2 requests per second sustained
+  burstWindow: number // 60000ms (60 seconds)
+  rateWindow: number // 1000ms (1 second)
 }
 
 const RATE_LIMIT_CONFIG: RateLimitConfig = {
-  burstLimit: 2,
-  sustainedLimit: 10,
-  burstWindow: 1000,
-  sustainedWindow: 10000
+  burstLimit: 30,      // From x-ratelimit-limit-burst header
+  rateLimit: 2,        // From x-ratelimit-limit-per-second header  
+  burstWindow: 60000,  // 60 seconds burst duration from docs
+  rateWindow: 1000     // 1 second window for rate limiting
 }
 
 // Track rate limiting per agent token
 interface RateLimitTracker {
-  burstRequests: number[]
-  sustainedRequests: number[]
+  burstRequests: number[]    // Track requests within burst window (60s)
+  rateRequests: number[]     // Track requests within rate window (1s)
   lastReset: number
 }
 
@@ -141,7 +145,7 @@ export class SpaceTradersApiClient {
     if (!this.rateLimitTrackers.has(token)) {
       this.rateLimitTrackers.set(token, {
         burstRequests: [],
-        sustainedRequests: [],
+        rateRequests: [],
         lastReset: Date.now()
       })
     }
@@ -269,19 +273,19 @@ export class SpaceTradersApiClient {
     
     // Clean old requests from tracking arrays
     tracker.burstRequests = tracker.burstRequests.filter(
-      time => now - time < RATE_LIMIT_CONFIG.burstWindow
+      (time: number) => now - time < RATE_LIMIT_CONFIG.burstWindow
     )
-    tracker.sustainedRequests = tracker.sustainedRequests.filter(
-      time => now - time < RATE_LIMIT_CONFIG.sustainedWindow
+    tracker.rateRequests = tracker.rateRequests.filter(
+      (time: number) => now - time < RATE_LIMIT_CONFIG.rateWindow
     )
 
-    // Check burst limit (2 requests per second)
+    // Check burst limit (30 requests in 60 seconds)
     if (tracker.burstRequests.length >= RATE_LIMIT_CONFIG.burstLimit) {
       return false
     }
 
-    // Check sustained limit (10 requests per 10 seconds)
-    if (tracker.sustainedRequests.length >= RATE_LIMIT_CONFIG.sustainedLimit) {
+    // Check rate limit (2 requests per second)
+    if (tracker.rateRequests.length >= RATE_LIMIT_CONFIG.rateLimit) {
       return false
     }
 
@@ -296,7 +300,7 @@ export class SpaceTradersApiClient {
     if (tracker) {
       const now = Date.now()
       tracker.burstRequests.push(now)
-      tracker.sustainedRequests.push(now)
+      tracker.rateRequests.push(now)
     }
   }
 
@@ -538,6 +542,63 @@ export class SpaceTradersApiClient {
       isOnline: this.isOnline,
       hasToken: !!this.currentToken,
       agentSymbol: this.currentAgentSymbol
+    }
+  }
+
+  /**
+   * Get rate limiter status
+   */
+  get rateLimiterStatus() {
+    if (!this.currentToken) {
+      return {
+        hasToken: false,
+        burstRequests: 0,
+        burstLimit: RATE_LIMIT_CONFIG.burstLimit,
+        rateRequests: 0,
+        rateLimit: RATE_LIMIT_CONFIG.rateLimit,
+        burstWindow: RATE_LIMIT_CONFIG.burstWindow,
+        rateWindow: RATE_LIMIT_CONFIG.rateWindow,
+        canMakeRequest: false
+      }
+    }
+
+    const tracker = this.rateLimitTrackers.get(this.currentToken)
+    if (!tracker) {
+      return {
+        hasToken: true,
+        burstRequests: 0,
+        burstLimit: RATE_LIMIT_CONFIG.burstLimit,
+        rateRequests: 0,
+        rateLimit: RATE_LIMIT_CONFIG.rateLimit,
+        burstWindow: RATE_LIMIT_CONFIG.burstWindow,
+        rateWindow: RATE_LIMIT_CONFIG.rateWindow,
+        canMakeRequest: true
+      }
+    }
+
+    const now = Date.now()
+    
+    // Clean old requests from tracking arrays for current status
+    const burstRequests = tracker.burstRequests.filter(
+      (time: number) => now - time < RATE_LIMIT_CONFIG.burstWindow
+    ).length
+    
+    const rateRequests = tracker.rateRequests.filter(
+      (time: number) => now - time < RATE_LIMIT_CONFIG.rateWindow
+    ).length
+
+    const canMakeRequest = burstRequests < RATE_LIMIT_CONFIG.burstLimit && 
+                          rateRequests < RATE_LIMIT_CONFIG.rateLimit
+
+    return {
+      hasToken: true,
+      burstRequests,
+      burstLimit: RATE_LIMIT_CONFIG.burstLimit,
+      rateRequests,
+      rateLimit: RATE_LIMIT_CONFIG.rateLimit,
+      burstWindow: RATE_LIMIT_CONFIG.burstWindow,
+      rateWindow: RATE_LIMIT_CONFIG.rateWindow,
+      canMakeRequest
     }
   }
 }

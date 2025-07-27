@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import AuthForm from '@/components/AuthForm.vue'
+import RateLimiterInfo from '@/components/RateLimiterInfo.vue'
 
 const authStore = useAuthStore()
 
@@ -93,42 +94,55 @@ onMounted(async () => {
 
       <!-- Authenticated Dashboard -->
       <div v-else>
-        <div class="bg-white rounded-lg shadow p-6">
-          <h3 class="text-xl font-semibold text-gray-900 mb-4">Agent Dashboard</h3>
-          
-          <!-- Agent Info -->
-          <div v-if="authStore.agentData" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-gray-50 p-4 rounded-lg">
-              <div class="text-sm text-gray-600">Headquarters</div>
-              <div class="font-medium">{{ authStore.agentData.headquarters }}</div>
-            </div>
-            <div class="bg-gray-50 p-4 rounded-lg">
-              <div class="text-sm text-gray-600">Faction</div>
-              <div class="font-medium">{{ authStore.agentData.startingFaction }}</div>
-            </div>
-            <div class="bg-gray-50 p-4 rounded-lg">
-              <div class="text-sm text-gray-600">Ships</div>
-              <div class="font-medium">{{ authStore.agentData.shipCount }}</div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Main Dashboard -->
+          <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg shadow p-6">
+              <h3 class="text-xl font-semibold text-gray-900 mb-4">Agent Dashboard</h3>
+              
+              <!-- Agent Info -->
+              <div v-if="authStore.agentData" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-gray-50 p-4 rounded-lg">
+                  <div class="text-sm text-gray-600">Headquarters</div>
+                  <div class="font-medium">{{ authStore.agentData.headquarters }}</div>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                  <div class="text-sm text-gray-600">Faction</div>
+                  <div class="font-medium">{{ authStore.agentData.startingFaction }}</div>
+                </div>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                  <div class="text-sm text-gray-600">Ships</div>
+                  <div class="font-medium">{{ authStore.agentData.shipCount }}</div>
+                </div>
+              </div>
+
+              <!-- Loading State -->
+              <div v-if="authStore.isLoading" class="text-center py-8">
+                <div class="animate-pulse text-gray-600">Loading agent data...</div>
+              </div>
+
+              <!-- Coming Soon -->
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <h4 class="font-medium text-blue-900 mb-2">🚧 Phase 1: Offline-First Foundation Complete!</h4>
+                <p class="text-blue-800 text-sm mb-4">
+                  The core offline-first infrastructure is now ready. Coming next:
+                </p>
+                <ul class="text-blue-700 text-sm space-y-1 list-disc list-inside">
+                  <li>Ship management and fleet overview</li>
+                  <li>SpaceTraders quickstart guide implementation</li>
+                  <li>Manual game controls (navigation, mining, trading)</li>
+                  <li>Visual automation workflow builder</li>
+                </ul>
+              </div>
             </div>
           </div>
 
-          <!-- Loading State -->
-          <div v-if="authStore.isLoading" class="text-center py-8">
-            <div class="animate-pulse text-gray-600">Loading agent data...</div>
-          </div>
-
-          <!-- Coming Soon -->
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <h4 class="font-medium text-blue-900 mb-2">🚧 Phase 1: Offline-First Foundation Complete!</h4>
-            <p class="text-blue-800 text-sm mb-4">
-              The core offline-first infrastructure is now ready. Coming next:
-            </p>
-            <ul class="text-blue-700 text-sm space-y-1 list-disc list-inside">
-              <li>Ship management and fleet overview</li>
-              <li>SpaceTraders quickstart guide implementation</li>
-              <li>Manual game controls (navigation, mining, trading)</li>
-              <li>Visual automation workflow builder</li>
-            </ul>
+          <!-- Sidebar -->
+          <div class="lg:col-span-1">
+            <div class="space-y-6">
+              <!-- Rate Limiter Info -->
+              <RateLimiterInfo />
+            </div>
           </div>
         </div>
       </div>

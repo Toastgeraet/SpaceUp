@@ -14,6 +14,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Computed
   const isAuthenticated = computed(() => !!token.value)
   const networkStatus = computed(() => apiClient.networkStatus)
+  const rateLimiterStatus = computed(() => apiClient.rateLimiterStatus)
 
   // Actions
   async function loadStoredAuth(): Promise<boolean> {
@@ -195,6 +196,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Computed
     isAuthenticated,
     networkStatus,
+    rateLimiterStatus,
     
     // Actions
     loadStoredAuth,
