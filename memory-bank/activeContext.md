@@ -2,137 +2,163 @@
 
 ## Current Work Focus
 
-### Project Status: Initial Setup Phase
-- **Phase**: Memory Bank Initialization
-- **Goal**: Establish comprehensive project documentation and technical foundation
-- **Priority**: Complete memory bank setup before beginning implementation
+### Project Status: Architecture Evolution Phase
+- **Phase**: Memory Bank Update - Offline-First Integration
+- **Goal**: Update project architecture to prioritize offline-first design with Vue 3 stack
+- **Priority**: Complete memory bank updates to reflect new technical direction
 
 ### Current Session Activities
 1. ✅ Created project brief with comprehensive requirements
 2. ✅ Defined product context and user experience goals
-3. ✅ Documented system architecture patterns and technical decisions
-4. ✅ Established technology stack and development constraints
-5. 🔄 Completing memory bank initialization
-6. ⏸️ Pending: Implementation planning and first development steps
+3. ✅ Updated system architecture patterns with offline-first design
+4. ✅ Migrated technology stack from React to Vue 3 with Pinia
+5. ✅ Integrated offline-first technologies (IndexedDB, Service Workers, Workbox)
+6. 🔄 Updating remaining memory bank files
+7. ⏸️ Pending: Implementation planning with new architecture
 
 ## Recent Changes
 
-### Memory Bank Establishment
-- **projectbrief.md**: Comprehensive project overview with phased implementation approach
-- **productContext.md**: User-centered design philosophy and experience goals
-- **systemPatterns.md**: Dual-mode architecture with client/server automation support
-- **techContext.md**: Modern React/TypeScript stack with emphasis on rate limiting
+### Memory Bank Updates (Current Session)
+- **systemPatterns.md**: Integrated offline-first architecture with comprehensive local-first data flow
+- **techContext.md**: Complete tech stack migration from React to Vue 3 with Pinia and offline-first tooling
+- **Architecture Evolution**: Added offline-first layer with IndexedDB, action queues, and background sync
 
 ### Key Insights Captured
-- SpaceTraders.io is a headless API-only game requiring full UI development
-- Rate limiting is critical (2 req/sec burst, 10 req/10sec sustained)
-- Dual-mode architecture enables both browser and server-based automation
-- Visual workflow editor similar to n8n/Node-RED for automation building
+- **Offline-First Priority**: Application works without internet connectivity first, enhances when connected
+- **Vue 3 Migration**: Moved from React/Zustand to Vue 3 SFCs with Pinia for better PWA integration
+- **SpaceTraders.io**: Headless API-only game requiring full UI development
+- **Rate limiting**: Critical (2 req/sec burst, 10 req/10sec sustained) - now handled through offline queue
+- **Dual-mode architecture**: Both browser and server-based automation built on offline-first foundation  
+- **Visual workflow editor**: Similar to n8n/Node-RED for automation building
 
 ## Next Steps
 
 ### Immediate Actions
-1. **Complete Memory Bank**: Finish progress.md and suggestions files
-2. **API Research**: Examine SpaceTraders.io API documentation in detail
-3. **Quickstart Analysis**: Review all 6 quickstart guide pages for implementation requirements
-4. **Technical Planning**: Create detailed implementation roadmap
+1. **Complete Memory Bank**: Update progress.md with offline-first milestones
+2. **API Research**: Examine SpaceTraders.io API documentation for offline-first implementation
+3. **Quickstart Analysis**: Review all 6 quickstart guide pages with offline-first approach
+4. **Technical Planning**: Create detailed implementation roadmap with Vue 3 and offline-first patterns
 
 ### Implementation Sequence
-1. **Foundation Setup**:
-   - Initialize React/TypeScript project with Vite
-   - Set up basic project structure and development environment
-   - Implement core API client with rate limiting
+1. **Offline-First Foundation**:
+   - Initialize Vue 3/TypeScript project with Vite
+   - Set up IndexedDB schema with Dexie.js
+   - Implement service worker with Workbox
+   - Create persistent action queue system
 
-2. **Authentication & Basic UI**:
-   - Token input and validation system
-   - Agent selection/creation interface
-   - Basic dashboard layout
+2. **Authentication & Local State**:
+   - Token input and validation with local storage
+   - Agent selection/creation with offline capability
+   - Basic dashboard with local-first data display
 
-3. **Quickstart Implementation**:
-   - Follow 6-step quickstart guide
-   - Create UI for each step
-   - Test complete tutorial flow
+3. **Offline-First Quickstart**:
+   - Implement 6-step quickstart guide with local state
+   - Create optimistic UI updates for immediate feedback
+   - Queue API operations for background sync
 
-4. **Automation Foundation**:
-   - Visual workflow editor setup
-   - Basic node types (actions, conditions, loops)
-   - Client-side execution engine
+4. **Automation with Offline Support**:
+   - Vue Flow workflow editor with local persistence
+   - Offline workflow execution against local state
+   - Background sync coordination with automation
 
 ## Active Decisions and Considerations
 
 ### Technical Choices Made
-- **Frontend**: React + TypeScript for type safety and maintainability
-- **State Management**: Zustand for simpler state management over Redux
+- **Frontend**: Vue 3 + TypeScript with Composition API for better PWA support and reactivity
+- **State Management**: Pinia for Vue 3 reactive state management with offline persistence
+- **Offline-First**: IndexedDB with Dexie.js for local-first data storage
+- **Background Sync**: Service workers with Workbox for offline functionality
 - **Styling**: Tailwind CSS for rapid development and consistency
-- **Workflow Editor**: React Flow for node-based automation builder
-- **Rate Limiting**: Custom implementation to precisely match API requirements
+- **Workflow Editor**: Vue Flow for node-based automation builder
+- **Rate Limiting**: Offline queue system that respects API rate limits during sync
 
 ### Pending Technical Decisions
-- **Server Architecture**: Express vs Fastify for optional server mode
-- **Database Choice**: SQLite for simplicity vs PostgreSQL for robustness
-- **Real-time Strategy**: Polling vs WebSocket for live updates
-- **Testing Framework**: Specific testing approach for automation workflows
+- **Conflict Resolution Strategy**: Last-write-wins vs user-intervention for sync conflicts
+- **Service Worker Scope**: Full app vs specific features for offline functionality
+- **IndexedDB Schema**: Detailed database design for game state and workflow storage
+- **Sync Scheduling**: Aggressive vs conservative background sync frequency
 
 ### User Experience Priorities
-- **Progressive Disclosure**: Start with simple manual controls, add automation complexity gradually
-- **Mobile-First**: Ensure core functionality works well on mobile devices
-- **Rate Limit Transparency**: Show users current rate limit status and queue
-- **Error Recovery**: Graceful handling of API errors and network issues
+- **Instant Responsiveness**: All interactions work immediately through local state
+- **Offline Capability**: Full functionality without internet connection
+- **Sync Transparency**: Clear indication of sync status and queue progress
+- **Mobile-First PWA**: Optimized for mobile devices with offline support
+- **Rate Limit Invisibility**: Users never blocked by API rate limits
 
 ## Important Patterns and Preferences
 
-### Code Organization Patterns
-- **Feature-Based Structure**: Group by domain (authentication, automation, dashboard) rather than type
-- **Custom Hooks**: Encapsulate API interactions and state management
-- **Component Composition**: Prefer composition over inheritance for UI flexibility
-- **Type-First Development**: Define TypeScript interfaces before implementation
+### Offline-First Code Organization
+- **Feature-Based Structure**: Group by domain (authentication, automation, dashboard) with offline support
+- **Vue Composables**: Encapsulate offline-first logic and API synchronization
+- **Component Composition**: Vue 3 composition API for flexible, reactive components
+- **Local-First Types**: TypeScript interfaces for local state, with API sync adapters
 
-### API Integration Patterns
-- **Request Queue**: All API calls go through centralized queue system
-- **Optimistic Updates**: Update UI immediately, rollback on errors
-- **Cache Strategy**: Intelligent caching based on data mutation frequency
-- **Error Boundaries**: Contain errors at component level with fallback UI
+### Offline-First Integration Patterns
+- **Local-First Updates**: All state changes happen locally first, sync in background
+- **Action Queue**: Persistent queue for all API operations with retry logic
+- **Optimistic UI**: Update UI immediately from local data, resolve conflicts during sync
+- **Cache Strategy**: IndexedDB as primary storage, API as sync target
+- **Background Sync**: Service workers handle API synchronization when connected
+- **Conflict Resolution**: Last-write-wins with user override for critical operations
 
-### Automation Design Patterns
-- **Node-Based Architecture**: Each action/condition as separate, composable node
-- **Event-Driven Execution**: Workflows react to game state changes
-- **Visual Programming**: Minimize code writing, maximize visual configuration
-- **Runtime Abstraction**: Same workflow definition runs in client or server mode
+### Vue 3 Automation Design Patterns
+- **Composable Workflows**: Vue 3 composables for workflow execution and management
+- **Reactive Nodes**: Vue reactive system for real-time workflow visualization
+- **Local Persistence**: Workflows saved to IndexedDB for offline editing and execution
+- **Background Execution**: Service worker coordination for long-running automation
 
 ## Project Insights and Learnings
 
-### SpaceTraders.io Understanding
-- Game is entirely API-driven with no official UI
-- Player progression follows space exploration and trading mechanics
-- Automation is key to efficient resource gathering and management
-- Community likely consists of technically-minded players
+### Offline-First Benefits for SpaceTraders
+- **Rate Limit Mitigation**: Queue system completely eliminates user-facing rate limiting
+- **Mobile Gaming**: True mobile experience with full offline gameplay capability
+- **Automation Reliability**: Workflows continue running even with poor connectivity
+- **Progressive Enhancement**: Works perfectly offline, better when connected
 
-### Market Opportunity
-- Large gap between API complexity and user accessibility
-- Mobile companion app could significantly expand user base
-- Visual automation tools could attract non-technical players
-- PWA approach enables full-featured mobile experience
+### PWA Market Opportunity
+- **Mobile-First Gaming**: Offline-capable mobile experience for space trading
+- **Installation**: PWA allows "app-like" installation without app stores
+- **Background Processing**: Service workers enable automation without active browser tab
+- **Notification Integration**: PWA notifications for completed trades and automation
 
-### Technical Challenges Identified
-- Rate limiting requires sophisticated queue management
-- Real-time updates need careful balance with API constraints
-- Browser limitations may require creative background processing solutions
-- Dual-mode architecture adds complexity but provides essential flexibility
+### Technical Challenges with Solutions
+- **IndexedDB Complexity**: Mitigated by Dexie.js for structured database operations
+- **Service Worker Debugging**: Chrome DevTools provides comprehensive SW debugging
+- **Sync Conflicts**: Structured conflict resolution with user override options
+- **Queue Management**: Priority-based queues with exponential backoff for reliability
 
 ## Current Blockers and Risks
 
-### Technical Risks
-- **Rate Limiting Complexity**: Underestimating rate limit management could break user experience
-- **Browser Limitations**: Background processing constraints may limit automation effectiveness
-- **API Stability**: Dependency on external API without SLA guarantees
+### Technical Risks with Mitigation
+- **IndexedDB Limitations**: Storage quotas mitigated by data pruning and user warnings
+- **Service Worker Complexity**: Workbox abstracts most complexity, comprehensive testing needed
+- **Sync State Management**: Pinia provides reactive sync state with Vue 3 reactivity
+- **Browser Compatibility**: Modern PWA features require recent browsers, graceful degradation
 
 ### Project Risks
-- **Scope Creep**: Feature-rich automation system could delay basic functionality
-- **User Adoption**: Technical barriers may still exist despite UI improvements
-- **Maintenance Burden**: Dual-mode architecture increases complexity and maintenance overhead
+- **Development Complexity**: Offline-first adds complexity but provides essential mobile experience
+- **Testing Overhead**: Offline scenarios require comprehensive testing but improve reliability
+- **Performance Concerns**: Local-first approach actually improves perceived performance
 
-### Mitigation Strategies
-- **Phased Development**: Implement basic features first, add complexity gradually
-- **API Abstraction**: Build robust API client to isolate application from API changes
-- **User Testing**: Early testing with actual SpaceTraders.io players
-- **Documentation**: Comprehensive documentation to reduce maintenance burden
+### Success Strategies
+- **Incremental Implementation**: Build offline-first from foundation, not retrofitted
+- **User-Centered Design**: Offline-first improves user experience, not just technical architecture
+- **Community Focus**: SpaceTraders community likely appreciates technical sophistication
+- **PWA Excellence**: Best-in-class PWA experience differentiates from other implementations
+
+## Current Momentum and Architecture Evolution
+
+### Why Offline-First for SpaceTraders
+- **API Rate Limits**: Offline-first completely solves rate limiting user experience issues
+- **Mobile Gaming**: Space trading benefits enormously from mobile companion app
+- **Automation Continuity**: Workflows need to run continuously, not just when browser open
+- **Network Resilience**: Space game shouldn't be interrupted by network issues
+
+### Vue 3 Advantages for This Project
+- **PWA Integration**: Vue 3 ecosystem has excellent PWA tooling and examples
+- **Reactive Performance**: Vue 3 reactivity system ideal for real-time game state updates
+- **Composition API**: Perfect for offline-first patterns and complex state management
+- **Mobile Performance**: Vue 3 optimized for mobile performance with smaller bundle sizes
+- **TypeScript Integration**: Excellent TypeScript support with better inference than React
+
+The project evolution toward offline-first architecture with Vue 3 positions it as a best-in-class PWA for SpaceTraders.io, solving fundamental user experience issues while enabling true mobile gaming capability.
