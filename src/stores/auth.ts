@@ -10,14 +10,25 @@ export const useAuthStore = defineStore('auth', () => {
   const agentData = ref<any>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  
+  // Rate limiter reactive state
+  const rateLimiterState = ref({
+    hasToken: false,
+    burstRequests: 0,
+    burstLimit: 30,
+    rateRequests: 0,
+    rateLimit: 2,
+    burstWindow: 60000,
+    rateWindow: 1000,
+    canMakeRequest: false
+  })
 
   // Computed
   const isAuthenticated = computed(() => !!token.value)
   const networkStatus = computed(() => apiClient.networkStatus)
-  
-  // Make rate limiter status reactive by creating a getter that Vue can track
-  const rateLimiterStatus = computed(() => {
-    return apiClient.rateLimiterStatus
+  const rateLimiterStatus = computed(() => 
+  {
+    return rateLimiterState.value
   })
 
   // Actions
@@ -189,6 +200,21 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
+  function updateRateLimiterStatus(): void {
+    // Get fresh rate limiter status from API client    
+    const status = apiClient.rateLimiterStatus
+    rateLimiterState.value = { ...status }
+  }
+
+  // Initialize connection with API client for reactive updates
+  const storeInstance = {
+    updateRateLimiterStatus,
+    // Add other methods that need to be exposed to API client
+  }
+  
+  // Set up the connection with API client
+  apiClient.setAuthStore(storeInstance)
+
   return {
     // State
     token: readonly(token),
@@ -208,6 +234,7 @@ export const useAuthStore = defineStore('auth', () => {
     registerNewAgent,
     refreshAgentData,
     logout,
-    clearError
+    clearError,
+    updateRateLimiterStatus
   }
 })

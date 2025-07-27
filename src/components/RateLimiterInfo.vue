@@ -15,7 +15,7 @@ const forceUpdate = () => {
 
 onMounted(() => {
   // Update every 100ms for smooth progress bars
-  updateInterval.value = window.setInterval(forceUpdate, 100)
+  updateInterval.value = window.setInterval(forceUpdate, 500)
 })
 
 onUnmounted(() => {
@@ -30,6 +30,7 @@ const rateLimiter = computed(() => {
   // is re-evaluated every 100ms, which allows the rate limiter to clean up
   // expired timestamps and update the UI accordingly
   lastUpdate.value
+  authStore.updateRateLimiterStatus()
   return authStore.rateLimiterStatus
 })
 

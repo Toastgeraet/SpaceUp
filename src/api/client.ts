@@ -3,6 +3,9 @@ import { db } from '@/db/schema'
 import { actionQueue } from '@/services/actionQueue'
 import { z } from 'zod'
 
+// Forward declaration to avoid circular dependency
+let authStore: any = null
+
 // Rate limiting configuration for SpaceTraders API
 // Based on actual API headers and documentation:
 // - Burst limit: 30 requests
@@ -286,6 +289,13 @@ export class SpaceTradersApiClient {
   }
 
   /**
+   * Set auth store reference for reactive updates
+   */
+  setAuthStore(store: any): void {
+    authStore = store
+  }
+
+  /**
    * Track a request for rate limiting
    */
   private trackRequest(token: string): void {
@@ -294,6 +304,18 @@ export class SpaceTradersApiClient {
       const now = Date.now()
       tracker.burstRequests.push(now)
       tracker.rateRequests.push(now)
+      
+      // Update reactive state in auth store
+      this.notifyRateLimiterUpdate()
+    }
+  }
+
+  /**
+   * Notify auth store of rate limiter updates
+   */
+  private notifyRateLimiterUpdate(): void {
+    if (authStore && typeof authStore.updateRateLimiterStatus === 'function') {
+      authStore.updateRateLimiterStatus()
     }
   }
 
