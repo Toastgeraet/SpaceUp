@@ -26,7 +26,9 @@ onUnmounted(() => {
 
 // Computed values that update with the interval
 const rateLimiter = computed(() => {
-  // Access lastUpdate to force reactivity
+  // Access lastUpdate to force reactivity - this ensures the computed property
+  // is re-evaluated every 100ms, which allows the rate limiter to clean up
+  // expired timestamps and update the UI accordingly
   lastUpdate.value
   return authStore.rateLimiterStatus
 })
