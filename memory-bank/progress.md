@@ -39,10 +39,10 @@
 
 #### Phase 2: Offline-First Game Interface (Next Priority)
 - [ ] **Local-First Dashboard Components**
-  - [ ] Agent overview with local state display
-  - [ ] Resource and credits with optimistic updates
-  - [ ] Fleet and ships with local caching
-  - [ ] Current location with offline map data
+  - [ ] Agent overview with local state display (real data priority, optimistic updates labeled as "expected: xyz in n minutes...")
+  - [ ] Resource and credits with real values always visible, optimistic updates clearly designated as predictions
+  - [ ] Fleet and ships with local caching (real API data takes priority over cached state)
+  - [ ] Current location with offline map data (real position data overrides local predictions)
 
 - [ ] **Offline-First Quickstart Implementation**
   - [ ] Step 1: New game registration with local account creation
