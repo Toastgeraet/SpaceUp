@@ -14,7 +14,6 @@ export interface Agent {
 }
 
 export interface Ship {
-  id?: number
   symbol: string
   registration: {
     name: string
@@ -25,8 +24,20 @@ export interface Ship {
     systemSymbol: string
     waypointSymbol: string
     route: {
-      origin: string
-      destination: string
+      origin: {
+        symbol: string
+        type: string
+        systemSymbol: string
+        x: number
+        y: number
+      }
+      destination: {
+        symbol: string
+        type: string
+        systemSymbol: string
+        x: number
+        y: number
+      }
       arrival: string
       departureTime: string
     }
@@ -113,6 +124,37 @@ export interface MarketData {
   updatedAt: Date
 }
 
+export interface Waypoint {
+  symbol: string
+  type: string
+  systemSymbol: string
+  x: number
+  y: number
+  orbitals?: Array<{
+    symbol: string
+  }>
+  traits?: Array<{
+    symbol: string
+    name: string
+    description: string
+  }>
+  modifiers?: Array<{
+    symbol: string
+    name: string
+    description: string
+  }>
+  chart?: {
+    waypointSymbol?: string
+    submittedBy?: string
+    submittedOn?: string
+  }
+  faction?: {
+    symbol: string
+  }
+  isUnderConstruction?: boolean
+  updatedAt: Date
+}
+
 export interface AuthToken {
   id?: number
   token: string
@@ -126,7 +168,8 @@ export interface AuthToken {
 // Define the database schema
 export class SpaceUpDB extends Dexie {
   agents!: EntityTable<Agent, 'id'>
-  ships!: EntityTable<Ship, 'id'>
+  ships!: EntityTable<Ship, 'symbol'>
+  waypoints!: EntityTable<Waypoint, 'symbol'>
   actionQueue!: EntityTable<ActionQueue, 'id'>
   apiCache!: EntityTable<ApiCache, 'id'>
   systemData!: EntityTable<SystemData, 'id'>
@@ -136,9 +179,10 @@ export class SpaceUpDB extends Dexie {
   constructor() {
     super('SpaceUpDB')
     
-    this.version(1).stores({
+    this.version(3).stores({
       agents: '++id, symbol, accountId, createdAt',
-      ships: '++id, symbol, agentSymbol, nav.systemSymbol, nav.waypointSymbol',
+      ships: 'symbol, agentSymbol, nav.systemSymbol, nav.waypointSymbol',
+      waypoints: 'symbol, systemSymbol, type, x, y, updatedAt',
       actionQueue: '++id, agentSymbol, shipSymbol, status, priority, scheduledAt, createdAt',
       apiCache: '++id, endpoint, params, expiresAt',
       systemData: '++id, symbol, type, x, y',
@@ -164,6 +208,14 @@ export class SpaceUpDB extends Dexie {
       modifications.updatedAt = new Date()
     })
 
+    this.waypoints.hook('creating', (primKey, obj: Waypoint, trans) => {
+      obj.updatedAt = new Date()
+    })
+
+    this.waypoints.hook('updating', (modifications: Partial<Waypoint>, primKey, obj, trans) => {
+      modifications.updatedAt = new Date()
+    })
+
     this.actionQueue.hook('creating', (primKey, obj: ActionQueue, trans) => {
       obj.createdAt = new Date()
     })
@@ -172,3 +224,35 @@ export class SpaceUpDB extends Dexie {
 
 // Create database instance
 export const db = new SpaceUpDB()
+
+// Database management utilities
+export async function resetDatabase(): Promise<void> {
+  console.log('Resetting database due to schema changes...')
+  try {
+    await db.delete()
+    await db.open()
+    console.log('Database reset successfully')
+  } catch (error) {
+    console.error('Failed to reset database:', error)
+    throw error
+  }
+}
+
+// Check if database needs to be reset due to schema incompatibility
+export async function checkDatabaseCompatibility(): Promise<void> {
+  try {
+    // Try to access ships table with new schema
+    await db.ships.limit(1).toArray()
+  } catch (error) {
+    if (error instanceof Error && (
+      error.message.includes('UpgradeError') || 
+      error.message.includes('primary key') ||
+      error.message.includes('schema')
+    )) {
+      console.log('Database schema incompatible, resetting...')
+      await resetDatabase()
+    } else {
+      throw error
+    }
+  }
+}
