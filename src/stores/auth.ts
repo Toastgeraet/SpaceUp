@@ -167,7 +167,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await apiClient.getAgent()
       agentData.value = response.data
     } catch (err) {
-      console.error('Failed to refresh agent data:', err)
+      // console.error('Failed to refresh agent data:', err)
       // If token is invalid, clear auth
       if (err instanceof Error && err.message.includes('401')) {
         await logout()
