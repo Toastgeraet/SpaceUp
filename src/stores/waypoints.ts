@@ -57,7 +57,7 @@ export const useWaypointsStore = defineStore('waypoints', () => {
         const otherWaypoints = waypoints.value.filter(w => w.systemSymbol !== systemSymbol)
         waypoints.value = [...otherWaypoints, ...updatedWaypoints]
       } catch (apiError) {
-        console.log('Using cached waypoint data due to API error:', apiError)
+        // console.log('Using cached waypoint data due to API error:', apiError)
         // Continue with cached data
       }
     } catch (err) {
