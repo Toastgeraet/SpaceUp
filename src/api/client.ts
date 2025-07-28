@@ -64,8 +64,20 @@ const ShipDataSchema = z.object({
     systemSymbol: z.string(),
     waypointSymbol: z.string(),
     route: z.object({
-      origin: z.string(),
-      destination: z.string(),
+      origin: z.object({
+        symbol: z.string(),
+        type: z.string(),
+        systemSymbol: z.string(),
+        x: z.number(),
+        y: z.number()
+      }),
+      destination: z.object({
+        symbol: z.string(),
+        type: z.string(),
+        systemSymbol: z.string(),
+        x: z.number(),
+        y: z.number()
+      }),
       arrival: z.string(),
       departureTime: z.string()
     }),
@@ -114,6 +126,52 @@ export const ShipResponseSchema = z.object({
 // Schema for multiple ships response
 export const ShipsResponseSchema = z.object({
   data: z.array(ShipDataSchema)
+})
+
+// Schema for waypoint data
+const WaypointDataSchema = z.object({
+  symbol: z.string(),
+  type: z.string(),
+  systemSymbol: z.string(),
+  x: z.number(),
+  y: z.number(),
+  orbitals: z.array(z.object({
+    symbol: z.string()
+  })).optional(),
+  traits: z.array(z.object({
+    symbol: z.string(),
+    name: z.string(),
+    description: z.string()
+  })).optional(),
+  modifiers: z.array(z.object({
+    symbol: z.string(),
+    name: z.string(),
+    description: z.string()
+  })).optional(),
+  chart: z.object({
+    waypointSymbol: z.string().optional(),
+    submittedBy: z.string().optional(),
+    submittedOn: z.string().optional()
+  }).optional(),
+  faction: z.object({
+    symbol: z.string()
+  }).optional(),
+  isUnderConstruction: z.boolean().optional()
+})
+
+// Schema for single waypoint response
+export const WaypointResponseSchema = z.object({
+  data: WaypointDataSchema
+})
+
+// Schema for multiple waypoints response (system waypoints)
+export const WaypointsResponseSchema = z.object({
+  data: z.array(WaypointDataSchema),
+  meta: z.object({
+    total: z.number(),
+    page: z.number(),
+    limit: z.number()
+  })
 })
 
 export class SpaceTradersApiClient {
@@ -223,7 +281,7 @@ export class SpaceTradersApiClient {
   async (error) => {
     // Check if error.config exists to avoid accessing undefined properties
     if (!error.config) {
-      console.warn('Error occurred without request config:', error)
+      // console.warn('Error occurred without request config:', error)
       return Promise.reject(error)
     }
 
@@ -448,6 +506,49 @@ export class SpaceTradersApiClient {
           }
         }
       }
+
+      // Update waypoint data
+      if (url.includes('/systems/') && url.includes('/waypoints')) {
+        // Check if this is a single waypoint or multiple waypoints response
+        if (url.match(/\/systems\/[^\/]+\/waypoints\/[^\/]+$/)) {
+          // Single waypoint response (e.g., /systems/X1-AA1/waypoints/X1-AA1-A1)
+          const waypointData = WaypointResponseSchema.parse(response.data)
+          await db.waypoints.put({
+            symbol: waypointData.data.symbol,
+            type: waypointData.data.type,
+            systemSymbol: waypointData.data.systemSymbol,
+            x: waypointData.data.x,
+            y: waypointData.data.y,
+            orbitals: waypointData.data.orbitals,
+            traits: waypointData.data.traits,
+            modifiers: waypointData.data.modifiers,
+            chart: waypointData.data.chart,
+            faction: waypointData.data.faction,
+            isUnderConstruction: waypointData.data.isUnderConstruction,
+            updatedAt: new Date()
+          })
+        } else if (url.match(/\/systems\/[^\/]+\/waypoints$/)) {
+          // Multiple waypoints response (e.g., /systems/X1-AA1/waypoints)
+          const waypointsData = WaypointsResponseSchema.parse(response.data)
+          // Store each waypoint individually
+          for (const waypoint of waypointsData.data) {
+            await db.waypoints.put({
+              symbol: waypoint.symbol,
+              type: waypoint.type,
+              systemSymbol: waypoint.systemSymbol,
+              x: waypoint.x,
+              y: waypoint.y,
+              orbitals: waypoint.orbitals,
+              traits: waypoint.traits,
+              modifiers: waypoint.modifiers,
+              chart: waypoint.chart,
+              faction: waypoint.faction,
+              isUnderConstruction: waypoint.isUnderConstruction,
+              updatedAt: new Date()
+            })
+          }
+        }
+      }
     } catch (error) {
       console.warn('Failed to update local data:', error)
     }
@@ -546,6 +647,16 @@ export class SpaceTradersApiClient {
       symbol,
       faction
     })
+    return response.data
+  }
+
+  async getSystemWaypoints(systemSymbol: string): Promise<any> {
+    const response = await this.axios.get(`/systems/${systemSymbol}/waypoints`)
+    return response.data
+  }
+
+  async getWaypoint(systemSymbol: string, waypointSymbol: string): Promise<any> {
+    const response = await this.axios.get(`/systems/${systemSymbol}/waypoints/${waypointSymbol}`)
     return response.data
   }
 
