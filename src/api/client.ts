@@ -285,6 +285,29 @@ export class SpaceTradersApiClient {
       return Promise.reject(error)
     }
 
+    // Handle 409 cooldown errors by updating ship data
+    if (error.response?.status === 409 && error.response?.data?.error?.data?.cooldown) {
+      const cooldownData = error.response.data.error.data.cooldown
+      console.log('Cooldown error detected:', cooldownData)
+      
+      // Update ship cooldown in local database
+      try {
+        const ship = await db.ships.where('symbol').equals(cooldownData.shipSymbol).first()
+        if (ship) {
+          ship.cooldown = {
+            shipSymbol: cooldownData.shipSymbol,
+            totalSeconds: cooldownData.totalSeconds,
+            remainingSeconds: cooldownData.remainingSeconds,
+            expiration: cooldownData.expiration
+          }
+          await db.ships.put(ship)
+          console.log('Updated ship cooldown in database')
+        }
+      } catch (dbError) {
+        console.warn('Failed to update ship cooldown in database:', dbError)
+      }
+    }
+
     // Handle offline or network errors by queuing
     if (!navigator.onLine || error.code === 'NETWORK_ERROR') {
       console.log('Network error, queuing request for background sync')

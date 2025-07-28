@@ -183,7 +183,7 @@
         <div class="space-y-2">
           <div class="flex justify-between text-sm">
             <span class="text-gray-600">Remaining</span>
-            <span class="font-medium">{{ ship.cooldown.remainingSeconds }}s</span>
+            <span class="font-medium">{{ currentCooldownRemaining }}s</span>
           </div>
           <div class="flex justify-between text-sm">
             <span class="text-gray-600">Total</span>
@@ -194,7 +194,7 @@
           <div class="w-full bg-gray-200 rounded-full h-2">
             <div 
               class="bg-red-600 h-2 rounded-full transition-all duration-300"
-              :style="{ width: `${((ship.cooldown.totalSeconds - ship.cooldown.remainingSeconds) / ship.cooldown.totalSeconds) * 100}%` }"
+              :style="{ width: `${ship.cooldown.totalSeconds > 0 ? ((ship.cooldown.totalSeconds - currentCooldownRemaining) / ship.cooldown.totalSeconds) * 100 : 0}%` }"
             ></div>
           </div>
         </div>
@@ -204,7 +204,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useGameStore } from '@/stores/game'
 import type { Ship } from '@/db/schema'
 
@@ -215,6 +215,104 @@ interface Props {
 const props = defineProps<Props>()
 const gameStore = useGameStore()
 const isRefreshing = ref(false)
+const currentCooldownRemaining = ref(props.ship.cooldown.remainingSeconds)
+
+// Cooldown refresh interval
+let cooldownInterval: number | null = null
+
+// Real-time arrival tracking for route info
+const currentArrivalTime = ref<number | null>(null)
+let arrivalInterval: number | null = null
+
+onMounted(() => {
+  // Start cooldown refresh interval
+  startCooldownRefresh()
+  // Start arrival time tracking if ship is in transit
+  if (props.ship.nav.status === 'IN_TRANSIT') {
+    startArrivalTimeTracking()
+  }
+})
+
+onUnmounted(() => {
+  // Clean up intervals
+  if (cooldownInterval) {
+    clearInterval(cooldownInterval)
+  }
+  if (arrivalInterval) {
+    clearInterval(arrivalInterval)
+  }
+})
+
+function startCooldownRefresh() {
+  // Clear existing interval
+  if (cooldownInterval) {
+    clearInterval(cooldownInterval)
+  }
+  
+  // Update current cooldown immediately
+  currentCooldownRemaining.value = props.ship.cooldown.remainingSeconds
+  
+  // Set up interval to update cooldown every second
+  cooldownInterval = setInterval(() => {
+    if (currentCooldownRemaining.value > 0) {
+      currentCooldownRemaining.value--
+    } else {
+      // Cooldown finished, refresh ship data
+      if (cooldownInterval) {
+        clearInterval(cooldownInterval)
+        cooldownInterval = null
+      }
+      refreshShipData()
+    }
+  }, 1000)
+}
+
+function startArrivalTimeTracking() {
+  // Clear existing interval
+  if (arrivalInterval) {
+    clearInterval(arrivalInterval)
+  }
+  
+  // Update arrival time every second
+  arrivalInterval = setInterval(() => {
+    if (props.ship.nav.status === 'IN_TRANSIT') {
+      const arrivalTime = new Date(props.ship.nav.route.arrival).getTime()
+      const now = Date.now()
+      const remaining = Math.max(0, arrivalTime - now)
+      currentArrivalTime.value = remaining
+      
+      // If ship has arrived, refresh ship data
+      if (remaining === 0) {
+        if (arrivalInterval) {
+          clearInterval(arrivalInterval)
+          arrivalInterval = null
+        }
+        refreshShipData()
+      }
+    } else {
+      // Ship is no longer in transit, stop tracking
+      if (arrivalInterval) {
+        clearInterval(arrivalInterval)
+        arrivalInterval = null
+      }
+    }
+  }, 1000)
+}
+
+// Watch for ship changes to restart cooldown refresh
+computed(() => {
+  if (props.ship.cooldown.remainingSeconds !== currentCooldownRemaining.value) {
+    startCooldownRefresh()
+  }
+  
+  // Watch for ship status changes to handle arrival tracking
+  if (props.ship.nav.status === 'IN_TRANSIT' && !arrivalInterval) {
+    startArrivalTimeTracking()
+  } else if (props.ship.nav.status !== 'IN_TRANSIT' && arrivalInterval) {
+    clearInterval(arrivalInterval)
+    arrivalInterval = null
+  }
+})
 
 const optimisticNavUpdate = computed(() => {
   return gameStore.getOptimisticUpdate(`${props.ship.symbol}_navigate`)

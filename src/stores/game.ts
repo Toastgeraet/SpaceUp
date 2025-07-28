@@ -13,6 +13,11 @@ export const useGameStore = defineStore('game', () => {
   
   // Optimistic updates tracking
   const optimisticUpdates = ref<Map<string, any>>(new Map())
+  
+  // Auto-extraction tracking
+  const autoExtractionShips = ref<Set<string>>(new Set())
+  const autoExtractionIntervals = ref<Map<string, number>>(new Map())
+  const notifications = ref<Array<{ id: string; type: string; message: string; timestamp: Date }>>([])
 
   // Computed
   const fleetCount = computed(() => ships.value.length)
@@ -211,6 +216,105 @@ export const useGameStore = defineStore('game', () => {
     optimisticUpdates.value.delete(key)
   }
 
+  // Auto-extraction functionality
+  async function toggleAutoExtraction(shipSymbol: string): Promise<void> {
+    if (autoExtractionShips.value.has(shipSymbol)) {
+      // Stop auto-extraction
+      stopAutoExtraction(shipSymbol)
+    } else {
+      // Start auto-extraction
+      startAutoExtraction(shipSymbol)
+    }
+  }
+
+  function startAutoExtraction(shipSymbol: string): void {
+    // Add to auto-extraction set
+    autoExtractionShips.value.add(shipSymbol)
+    
+    // Start extraction loop
+    const extractionLoop = async () => {
+      try {
+        const ship = ships.value.find(s => s.symbol === shipSymbol)
+        if (!ship) {
+          stopAutoExtraction(shipSymbol)
+          return
+        }
+
+        // Check if cargo is full
+        if (ship.cargo.units >= ship.cargo.capacity) {
+          stopAutoExtraction(shipSymbol)
+          addNotification('warning', `${shipSymbol}: Cargo is full! Auto-extraction stopped.`)
+          return
+        }
+
+        // Check if ship is in orbit and cooldown is 0
+        console.debug(`${shipSymbol}: Ships status: ${ship.nav.status}, Cooldown: ${ship.cooldown.remainingSeconds}s`)
+        if (ship.nav.status === 'IN_ORBIT' && ship.cooldown.remainingSeconds === 0) {
+          await extractResources(shipSymbol)
+        }
+      } catch (error: any) {
+        // Handle 409 cooldown errors
+        if (error.response?.status === 409) {
+          const cooldownData = error.response.data?.error?.data?.cooldown
+          if (cooldownData) {
+            console.log(`Auto-extraction waiting for cooldown: ${cooldownData.remainingSeconds}s`)
+            // Continue the loop, it will check again
+          }
+        } else {
+          console.error('Auto-extraction error:', error)
+          stopAutoExtraction(shipSymbol)
+          addNotification('error', `${shipSymbol}: Auto-extraction stopped due to error.`)
+        }
+      }
+    }
+
+    // Set up interval to check every 2 seconds
+    const intervalId = setInterval(extractionLoop, 2000)
+    autoExtractionIntervals.value.set(shipSymbol, intervalId)
+    
+    addNotification('info', `${shipSymbol}: Auto-extraction started.`)
+  }
+
+  function stopAutoExtraction(shipSymbol: string): void {
+    // Remove from auto-extraction set
+    autoExtractionShips.value.delete(shipSymbol)
+    
+    // Clear interval
+    const intervalId = autoExtractionIntervals.value.get(shipSymbol)
+    if (intervalId) {
+      clearInterval(intervalId)
+      autoExtractionIntervals.value.delete(shipSymbol)
+    }
+    
+    addNotification('info', `${shipSymbol}: Auto-extraction stopped.`)
+  }
+
+  function isAutoExtracting(shipSymbol: string): boolean {
+    return autoExtractionShips.value.has(shipSymbol)
+  }
+
+  function addNotification(type: string, message: string): void {
+    const notification = {
+      id: Date.now().toString(),
+      type,
+      message,
+      timestamp: new Date()
+    }
+    notifications.value.unshift(notification)
+    
+    // Keep only last 10 notifications
+    if (notifications.value.length > 10) {
+      notifications.value = notifications.value.slice(0, 10)
+    }
+  }
+
+  function clearNotification(id: string): void {
+    const index = notifications.value.findIndex(n => n.id === id)
+    if (index >= 0) {
+      notifications.value.splice(index, 1)
+    }
+  }
+
   function clearError(): void {
     error.value = null
   }
@@ -222,6 +326,8 @@ export const useGameStore = defineStore('game', () => {
     isLoading: readonly(isLoading),
     error: readonly(error),
     optimisticUpdates: readonly(optimisticUpdates),
+    autoExtractionShips: readonly(autoExtractionShips),
+    notifications: readonly(notifications),
     
     // Computed
     fleetCount,
@@ -235,6 +341,10 @@ export const useGameStore = defineStore('game', () => {
     extractResources,
     dockShip,
     orbitShip,
+    toggleAutoExtraction,
+    isAutoExtracting,
+    addNotification,
+    clearNotification,
     getOptimisticUpdate,
     clearOptimisticUpdate,
     clearError

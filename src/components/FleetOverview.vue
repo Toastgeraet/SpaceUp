@@ -28,7 +28,7 @@
             <div class="text-right">
               <div class="text-gray-900">{{ ship.nav.route.destination.symbol }}</div>
               <div class="text-xs text-gray-500">
-                Arrival: {{ formatArrivalTime(ship.nav.route.arrival) }}
+                Arrival: {{ formatArrivalTimeRealtime(ship.symbol, ship.nav.route.arrival) }}
               </div>
             </div>
           </div>
@@ -106,10 +106,57 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useGameStore } from '@/stores/game'
 
 const gameStore = useGameStore()
+
+// Real-time arrival tracking
+const arrivalTimes = ref<Map<string, number>>(new Map())
+let arrivalInterval: number | null = null
+
+onMounted(() => {
+  startArrivalTimeUpdates()
+})
+
+onUnmounted(() => {
+  if (arrivalInterval) {
+    clearInterval(arrivalInterval)
+  }
+})
+
+function startArrivalTimeUpdates() {
+  // Clear existing interval
+  if (arrivalInterval) {
+    clearInterval(arrivalInterval)
+  }
+  
+  // Update arrival times every second
+  arrivalInterval = setInterval(() => {
+    updateArrivalTimes()
+  }, 1000)
+  
+  // Initial update
+  updateArrivalTimes()
+}
+
+function updateArrivalTimes() {
+  const newArrivalTimes = new Map()
+  
+  gameStore.travelingShips.forEach(ship => {
+    const arrivalTime = new Date(ship.nav.route.arrival).getTime()
+    const now = Date.now()
+    const remaining = Math.max(0, arrivalTime - now)
+    newArrivalTimes.set(ship.symbol, remaining)
+    
+    // If ship has arrived, refresh fleet data
+    if (remaining === 0) {
+      refreshFleet()
+    }
+  })
+  
+  arrivalTimes.value = newArrivalTimes
+}
 
 const optimisticNavUpdates = computed(() => {
   const updates = []
@@ -142,6 +189,28 @@ function formatArrivalTime(arrivalTime: string): string {
   
   const minutes = Math.floor(diff / 60000)
   const seconds = Math.floor((diff % 60000) / 1000)
+  
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`
+  } else {
+    return `${seconds}s`
+  }
+}
+
+function formatArrivalTimeRealtime(shipSymbol: string, arrivalTime: string): string {
+  const remaining = arrivalTimes.value.get(shipSymbol)
+  
+  if (remaining === undefined) {
+    // Fallback to original calculation if not in map yet
+    return formatArrivalTime(arrivalTime)
+  }
+  
+  if (remaining <= 0) {
+    return 'Arrived'
+  }
+  
+  const minutes = Math.floor(remaining / 60000)
+  const seconds = Math.floor((remaining % 60000) / 1000)
   
   if (minutes > 0) {
     return `${minutes}m ${seconds}s`

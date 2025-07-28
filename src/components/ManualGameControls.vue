@@ -115,11 +115,17 @@
               </span>
             </div>
             <button 
-              @click="extractResources"
+              @click="toggleExtraction"
               :disabled="!canExtract || isExtracting"
-              class="w-full px-4 py-2 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 rounded-md"
+              :class="[
+                'w-full px-4 py-2 text-sm font-medium text-white rounded-md transition-colors',
+                gameStore.isAutoExtracting(gameStore.selectedShip.symbol) 
+                  ? 'bg-red-600 hover:bg-red-700' 
+                  : 'bg-yellow-600 hover:bg-yellow-700',
+                (!canExtract || isExtracting) && 'bg-gray-400'
+              ]"
             >
-              {{ isExtracting ? 'Queuing...' : 'Extract' }}
+              {{ isExtracting ? 'Queuing...' : (gameStore.isAutoExtracting(gameStore.selectedShip.symbol) ? 'Stop Auto-Extract' : 'Start Auto-Extract') }}
             </button>
             <div v-if="!canExtract" class="text-xs text-red-600">
               Ship must be in orbit to extract resources
@@ -287,6 +293,17 @@ async function orbitShip() {
     await gameStore.orbitShip(gameStore.selectedShip.symbol)
   } finally {
     isOrbiting.value = false
+  }
+}
+
+async function toggleExtraction() {
+  if (!gameStore.selectedShip) return
+  
+  isExtracting.value = true
+  try {
+    await gameStore.toggleAutoExtraction(gameStore.selectedShip.symbol)
+  } finally {
+    isExtracting.value = false
   }
 }
 

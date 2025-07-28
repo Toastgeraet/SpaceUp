@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
+import NotificationCenter from '@/components/NotificationCenter.vue'
 </script>
 
 <template>
   <RouterView />
+  <NotificationCenter />
 </template>
 
 <style scoped>
